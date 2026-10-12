@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KI-Trading Leitstand</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KI-Trading">
+  <meta name="theme-color" content="#0a0e17">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(circle at 50% 20%, #152238 0%, #080c14 100%);
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: rgba(18, 26, 43, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 230, 118, 0.15);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid rgba(0, 230, 118, 0.35);
+      color: #00e676;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background: #00e676;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #00e676;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(0, 230, 118, 0.2);
+      border-top-color: #00e676;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%);
+      color: #040d1a;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 20px rgba(0, 230, 118, 0.3);
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">
+      <span class="pulse"></span>
+      <span>24/7 Live-Gateway</span>
+    </div>
+    <h1>KI-Trading Leitstand</h1>
+    <p id="status-text">Verbinde sicher mit deinem iMac...</p>
+    <div class="spinner" id="spinner"></div>
+    <a href="#" id="direct-btn" class="btn" style="display:none;">Jetzt Leitstand öffnen</a>
+    <div class="footer">Feste Gateway-Adresse für Andy2407</div>
+  </div>
+
+  <script>
+    const GIST_RAW = "https://gist.githubusercontent.com/Andy2407/b79827090844611bae94b1229bdf6ca4/raw/tunnel_live_url.txt";
+    const statusText = document.getElementById("status-text");
+    const directBtn = document.getElementById("direct-btn");
+    const spinner = document.getElementById("spinner");
+
+    async function connect() {
+      try {
+        const res = await fetch(GIST_RAW + "?t=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const url = (await res.text()).trim();
+        if (url && url.startsWith("http")) {
+          statusText.innerText = "Tunnel verbunden. Leite weiter...";
+          directBtn.href = url;
+          directBtn.style.display = "block";
+          // Sofortige Weiterleitung
+          window.location.replace(url);
+        } else {
+          throw new Error("Ungueltige URL");
+        }
+      } catch (err) {
+        statusText.innerText = "Tunnel wird synchronisiert... Bitte kurz warten.";
+        setTimeout(connect, 3000);
+      }
+    }
+    connect();
+  </script>
+</body>
+</html>
