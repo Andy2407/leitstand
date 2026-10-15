@@ -1,0 +1,19 @@
+{
+  "name": "KI-Trading Leitstand",
+  "short_name": "Leitstand",
+  "description": "24/7 Autonomer Leitstand des KI-Trading-Systems (Alpaca Live)",
+  "start_url": "https://andy2407.github.io/leitstand/",
+  "scope": "https://andy2407.github.io/leitstand/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070a12",
+  "theme_color": "#070a12",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23070a12'/%3E%3Cpath d='M256 64 L384 192 L320 192 L320 384 L192 384 L192 192 L128 192 Z' fill='%2300e676'/%3E%3Ccircle cx='256' cy='430' r='24' fill='%2300f0ff'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
