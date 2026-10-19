@@ -233,16 +233,22 @@
       retryBtn.style.display = "none";
 
       try {
-        const tunnelUrl = await fetchLiveTunnelUrl();
-        currentTunnelUrl = tunnelUrl;
-        directLink.href = tunnelUrl;
+        const rawTunnel = await fetchLiveTunnelUrl();
+        currentTunnelUrl = rawTunnel;
+        directLink.href = rawTunnel;
         directLink.style.display = "inline-block";
 
-        const token = getStoredToken();
-        const targetUrl = token ? `${tunnelUrl}/?token=${encodeURIComponent(token)}` : tunnelUrl;
+        const baseOrigin = new URL(rawTunnel).origin;
+        const storedToken = getStoredToken();
+        let targetUrl = rawTunnel;
+        if (storedToken && !rawTunnel.includes("token=")) {
+          targetUrl = rawTunnel.includes("?") 
+            ? `${rawTunnel}&token=${encodeURIComponent(storedToken)}`
+            : `${rawTunnel}/?token=${encodeURIComponent(storedToken)}`;
+        }
 
         // Iframe laden wenn neu oder geaendert
-        if (!appFrame.src || !appFrame.src.startsWith(tunnelUrl)) {
+        if (!appFrame.src || !appFrame.src.startsWith(baseOrigin)) {
           statusText.innerText = "Leitstand wird geladen...";
           appFrame.src = targetUrl;
         }
@@ -256,7 +262,7 @@
 
         // Fallback: Wenn onload nach 3s noch nicht feuerte, Overlay sanft ausblenden
         setTimeout(() => {
-          if (appFrame.src && appFrame.src.startsWith(tunnelUrl)) {
+          if (appFrame.src && appFrame.src.startsWith(baseOrigin)) {
             appFrame.style.display = "block";
             loaderOverlay.classList.add("hidden");
             isConnecting = false;
