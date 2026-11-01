@@ -186,7 +186,9 @@
   </div>
 
   <script>
-    const GIST_RAW = "https://gist.githubusercontent.com/Andy2407/b79827090844611bae94b1229bdf6ca4/raw/tunnel_live_url.txt";
+    const GIST_ID = "b79827090844611bae94b1229bdf6ca4";
+    const GIST_API = "https://api.github.com/gists/" + GIST_ID;
+    const GIST_RAW = "https://gist.githubusercontent.com/Andy2407/" + GIST_ID + "/raw/tunnel_live_url.txt";
     const statusText = document.getElementById("status-text");
     const retryBtn = document.getElementById("retry-btn");
     const directLink = document.getElementById("direct-link");
@@ -214,6 +216,23 @@
     }
 
     async function fetchLiveTunnelUrl() {
+      // 1. Ungecachte GitHub REST API (Echtzeit ohne 5-Minuten CDN-Verzögerung)
+      try {
+        const apiRes = await fetch(GIST_API + "?t=" + Date.now(), {
+          cache: "no-store",
+          headers: { "Accept": "application/vnd.github+json" }
+        });
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          const fileObj = data && data.files && data.files["tunnel_live_url.txt"];
+          const content = fileObj && fileObj.content ? String(fileObj.content).trim() : "";
+          if (content && content.startsWith("http")) {
+            return content;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Fallback: Gist Raw URL
       const res = await fetch(GIST_RAW + "?t=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const txt = (await res.text()).trim();
@@ -223,21 +242,33 @@
       throw new Error("Ungueltige Tunnel-URL");
     }
 
+    async function verifyTunnelAlive(baseOrigin) {
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 3500);
+        const r = await fetch(baseOrigin + "/api/health?t=" + Date.now(), {
+          cache: "no-store",
+          mode: "cors",
+          signal: ctrl.signal
+        });
+        clearTimeout(tid);
+        return r.ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
     async function startConnect(manual = false) {
       if (isConnecting && !manual) return;
       isConnecting = true;
       if (retryTimer) clearTimeout(retryTimer);
 
-      statusText.innerText = "Synchronisiere Tunnel-Adresse...";
+      statusText.innerText = "Synchronisiere Echtzeit-Tunnel-Adresse...";
       spinner.style.display = "block";
       retryBtn.style.display = "none";
 
       try {
         const rawTunnel = await fetchLiveTunnelUrl();
-        currentTunnelUrl = rawTunnel;
-        directLink.href = rawTunnel;
-        directLink.style.display = "inline-block";
-
         const baseOrigin = new URL(rawTunnel).origin;
         const storedToken = getStoredToken();
         let targetUrl = rawTunnel;
@@ -247,6 +278,16 @@
             : `${rawTunnel}/?token=${encodeURIComponent(storedToken)}`;
         }
 
+        currentTunnelUrl = rawTunnel;
+        directLink.href = targetUrl;
+        directLink.style.display = "inline-block";
+
+        statusText.innerText = "Prüfe Live-Verbindung zum Leitstand...";
+        const alive = await verifyTunnelAlive(baseOrigin);
+        if (!alive) {
+          throw new Error("Tunnel antwortet noch nicht");
+        }
+
         // Iframe laden wenn neu oder geaendert
         if (!appFrame.src || !appFrame.src.startsWith(baseOrigin)) {
           statusText.innerText = "Leitstand wird geladen...";
@@ -254,26 +295,25 @@
         }
 
         appFrame.onload = function() {
-          // Erfolgreich im Iframe gerendert
           appFrame.style.display = "block";
           loaderOverlay.classList.add("hidden");
           isConnecting = false;
         };
 
-        // Fallback: Wenn onload nach 3s noch nicht feuerte, Overlay sanft ausblenden
+        // Fallback: Nur ausblenden, nachdem /api/health positiv verifiziert wurde
         setTimeout(() => {
           if (appFrame.src && appFrame.src.startsWith(baseOrigin)) {
             appFrame.style.display = "block";
             loaderOverlay.classList.add("hidden");
             isConnecting = false;
           }
-        }, 3000);
+        }, 2200);
 
       } catch (err) {
         isConnecting = false;
-        statusText.innerText = "Verbindung wird aufgebaut... Neuer Versuch in 4s.";
+        statusText.innerText = "Tunnel wird aktualisiert... Automatischer Neuversuch in 3s.";
         retryBtn.style.display = "block";
-        retryTimer = setTimeout(() => startConnect(false), 4000);
+        retryTimer = setTimeout(() => startConnect(false), 3000);
       }
     }
 
